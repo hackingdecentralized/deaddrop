@@ -4,16 +4,21 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 // ylitchev: to process payloads
 use rust_omr::types::{decode_payloads, encode_pk_detect_to_hex, Payload};
 
+use log::{info, warn, error, debug, trace};
+
 fn main() {
+
+    env_logger::init();
+
     // Create an instance of the receiver
     let mut receiver = Receiver::new();
-
-    receiver.post_info_for_submitters();
 
     //At start up we create the receiver and all the info
     // and we print the info for the frontend
 
     // Then we have a menu with multiple options:
+
+    // 0. Print Receiver internal state
 
     // 1. Get detection key to request the digest (compress digest of pertinent messages, in our case encrypted symmetric keys for retrieving later bug reports)
 
@@ -21,17 +26,18 @@ fn main() {
 
     // 3. Give the id for the file to retrieve and parse an HEX string of the CXTX to decrypt the bug report to get the bug report
 
-    println!("Receiver is running...");
+    debug!("Receiver is running...");
 
     // let detection_key: PKDetect;
 
     loop {
         // Menu items shown to the user
         let menu_items = [
-            "1. Get detection key",
-            "2. Decode digest",
-            "3. Decrypt bug report",
-            "4. Exit",
+            "1. Print Receiver Info",
+            "2. Get detection key",
+            "3. Decode digest",
+            "4. Decrypt bug report",
+            "5. Exit",
         ];
 
         // Arrow-key, highlighted selection
@@ -44,11 +50,12 @@ fn main() {
 
         // Act on the chosen item
         match selection {
-            0 => handle_detection_key(&mut receiver),
-            1 => handle_decode_digest(&mut receiver),
-            2 => handle_process_id(&mut receiver),
-            3 => {
-                println!("\nExiting. Goodbye!");
+            0 => handle_print(&mut receiver),
+            1 => handle_detection_key(&mut receiver),
+            2 => handle_decode_digest(&mut receiver),
+            3 => handle_process_id(&mut receiver),
+            4 => {
+                info!("Exiting. Goodbye!");
                 break;
             }
             _ => unreachable!(), // `Select` guarantees 0-3 only
@@ -56,17 +63,21 @@ fn main() {
     }
 }
 
-
 // ylitchev: print out the stored detection key
 fn handle_detection_key(receiver: &mut Receiver) {
-    println!("\nOption 1 selected: Get detection key\n");
+    info!("Option 1 selected: Get detection key");
 
-    let temp = receiver.public_key.pk_detect.clone(); 
+    let temp = receiver.public_key.pk_detect.clone();
     let pk_detect_hex = encode_pk_detect_to_hex(&temp);
-    println!("Detection key set to {:?}", pk_detect_hex);
+    info!("Detection key set to {:?}", pk_detect_hex);
     
 }
 
+fn handle_print(receiver: &mut Receiver) {
+    info!("Option 0 selected: Print Receiver Info");
+
+    receiver.post_info_for_submitters();
+}
 
 // ylitchev: given an input digest, decode it by calling the
 //           appropriate function in reciever.rs
@@ -91,7 +102,6 @@ fn handle_decode_digest(receiver: &mut Receiver) {
     receiver.decode_digest(&decoded_digest);
 }
 
-
 // ylitchev: Pop the most recent payload from the queue, process it
 //           in order to receive an id and symmetric key. Wait for a
 //           ciphertext, when given, decrypt it
@@ -100,13 +110,13 @@ fn handle_process_id(receiver: &mut Receiver) {
     let popped_element = receiver.get_next_decoded_payload();
     match popped_element {
         Ok(element) => {
-             if element.is_some() {
+            if element.is_some() {
                 // There is an element, unwrap and parse it
                 let payload = element.unwrap();
 
                 let (id, symmetric_key) = receiver.extract_info_from_decoded_payload(&payload);
 
-                println!("We have an id=[{id}]");
+                info!("We have an id=[{id}]");
 
                 // Request a ciphertext from user input
                 let ciphertext: String = Input::new()
@@ -114,24 +124,22 @@ fn handle_process_id(receiver: &mut Receiver) {
                     .interact_text()
                     .expect("failed to read line");
 
-                println!("You typed: {ciphertext}\n");
+                info!("You typed: {ciphertext}\n");
 
                 // Decode the ciphertext, get the plaintext and print it
-                let plaintext = receiver.decrypt_bug_report(&ciphertext, symmetric_key);    
+                let plaintext = receiver.decrypt_bug_report(&ciphertext, symmetric_key);
 
-                println!("Resulting plaintext: {:?}", plaintext);
+                info!("Resulting plaintext: {:?}", plaintext);
             } else {
-                println!("Nothing was popped from queue!");
+                warn!("Nothing was popped from queue!");
             }
         }
         Err(e) => {
-            println!("Error popping element: {}", e);
+            warn!("Error popping element: {}", e);
             return; // Exit if there's an error
         }
     }
-   
 }
-
 
 // ylitchev: Dummy template function to handle command-line inputs
 /// Helper: prompt for arbitrary user input, then echo it with a custom banner.
@@ -144,4 +152,3 @@ fn handle_option(banner: &str) {
 
     println!("You typed: {input}\n");
 }
-

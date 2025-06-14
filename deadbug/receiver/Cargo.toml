@@ -9,7 +9,13 @@ hex = "0.4"
 rust_omr = {path = "../rust_omr", version = "0.1.0"}
 utils = {path = "../utils", version = "0.1.0"}
 submitter = {path = "../submitter", version = "0.1.0"}
+log = "0.4"
+env_logger = "0.11"
 
 [[bin]]
 name = "receiver"
 path = "src/bin/receiver.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"

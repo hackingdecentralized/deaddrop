@@ -1,5 +1,5 @@
-use utils::pke::*;
 use std::error::Error;
+use utils::pke::*;
 
 #[derive(Debug)]
 pub struct ReceiverError(pub String);
@@ -22,7 +22,7 @@ pub struct BugInfo {
 #[derive(Clone)]
 pub struct EncKeys {
     pub pk_enc: EncPublicKey, // Public key for encryption
-    sk_enc: EncPrivateKey     // Secret key for encryption
+    sk_enc: EncPrivateKey,    // Secret key for encryption
 }
 
 impl EncKeys {
@@ -42,20 +42,19 @@ impl EncKeys {
         let decrypted_data = decrypt_data(encrypted_data, &self.sk_enc);
         decrypted_data
     }
-
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum BugStatus {
     Pending,   // Bug is pending review
-    Retrieved,  // Bug has been retrieved from the database
-    Decrypted,  // Bug has been decrypted
-    Saved,  // Bug has been saved on file 
+    Retrieved, // Bug has been retrieved from the database
+    Decrypted, // Bug has been decrypted
+    Saved,     // Bug has been saved on file
 }
 pub struct BugMetadata {
-    pub bug_id: String, // Unique identifier for the bug
+    pub bug_id: String,                    // Unique identifier for the bug
     pub symmetric_key: (Vec<u8>, Vec<u8>), // Symmetric key used for encryption
-    pub encrypted_bug: String, // Cxtx in hex format
-    pub decrypted_bug: String, // Decrypted bug content or file name
-    pub status: BugStatus, // Status of the bug
+    pub encrypted_bug: String,             // Cxtx in hex format
+    pub decrypted_bug: String,             // Decrypted bug content or file name
+    pub status: BugStatus,                 // Status of the bug
 }
