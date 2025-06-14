@@ -1,0 +1,3 @@
+[submodule "deadbug/submitter/bin/bug-verify/lib/forge-std"]
+	path = deadbug/submitter/bin/bug-verify/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
