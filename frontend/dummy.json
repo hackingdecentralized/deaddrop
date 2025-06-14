@@ -1,7 +1,0 @@
-{
-  "attestation": "signed-by-x509\u2026",
-  "bugid": "BR-1234",
-  "ciphertext": "0xdeadbeef\u2026",
-  "omr_clue": "some-clue",
-  "omr_payload": "0xbeefcafe"
-}

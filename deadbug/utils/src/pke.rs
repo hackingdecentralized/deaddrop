@@ -6,6 +6,12 @@ use age::{
 use std::io::{Read, Write};
 use std::str::FromStr;
 
+// ylitchev: Additional setup for file serialization and commits
+use std::fs::{File, OpenOptions};
+use std::path::Path;
+// ylitchev: key file locationx
+const KEYS_FILE_LOCATION: &str = "/tmp/funkeys_pke.txt";
+
 pub type EncPublicKey = age::x25519::Recipient;
 pub type EncPrivateKey = age::x25519::Identity;
 
@@ -54,10 +60,65 @@ pub fn decrypt_from_hex(encrypted_hex: &str, identity: &EncPrivateKey) -> Vec<u8
 
 /// Generate a new X25519 identity (private key) and its corresponding public key
 pub fn key_gen() -> (EncPrivateKey, EncPublicKey) {
+    // let identity = EncPrivateKey::generate();
+    // let recipient = identity.to_public();
+    // (identity, recipient)
+
+    if Path::new(KEYS_FILE_LOCATION).exists() {
+        match read_keys_from_file() {
+            Ok((sk, pk)) => {
+                println!("Loaded keys from file.");
+                return (sk, pk);
+            }
+            Err(e) => {
+                println!("Failed to read keys from file: {}", e);
+                println!("Generating new keys...");
+            }
+        }
+    }
+
+    // If the file does not exist or is malformed, generate new keys
     let identity = EncPrivateKey::generate();
     let recipient = identity.to_public();
+
+    if let Err(e) = write_keys_to_file(&identity, &recipient) {
+        eprintln!("Failed to write keys to file: {}", e);
+    }
+
     (identity, recipient)
 }
+
+/// Save keys to file
+fn write_keys_to_file(sk: &EncPrivateKey, pk: &EncPublicKey) -> std::io::Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(KEYS_FILE_LOCATION)?;
+
+    let sk_str = sk_to_string(sk);
+    let pk_str = pk_to_string(pk);
+
+    writeln!(file, "{}", sk_str)?;
+    writeln!(file, "{}", pk_str)?;
+    Ok(())
+}
+
+/// Read keys from file
+fn read_keys_from_file() -> Result<(EncPrivateKey, EncPublicKey), Box<dyn std::error::Error>> {
+    let mut file = File::open(KEYS_FILE_LOCATION)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let mut lines = contents.lines();
+    let sk_line = lines.next().ok_or("Missing private key line")?;
+    let pk_line = lines.next().ok_or("Missing public key line")?;
+
+    let sk = sk_from_string(sk_line);
+    let pk = pk_from_string(pk_line);
+    Ok((sk, pk))
+}
+
 
 /// Convert public key to string (e.g., "age1xyz...")
 pub fn pk_to_string(pk: &EncPublicKey) -> String {
