@@ -8,6 +8,7 @@ use utils::pke::pk_from_string;
 use std::process::Command;
 use std::error::Error;
 use hex;
+
 // use crate::check_bug_impl; // Uncomment and fix this if check_bug_impl exists elsewhere
 fn read_contract_addr(file_path: &str) -> io::Result<String> {
     let mut file = File::open(file_path)?;
@@ -44,14 +45,20 @@ fn gen_attestation() -> Result<String, Box<dyn Error>> {
 }
 
 fn main() {
-    // Get everthing you need for the bug check
-    let bug_file = "bug/bug_report.sol";
-    let block_num_file = "test/block_num.txt";
-    let test_file = "test/test_example.sol";
-    let contract_addr_file = "test/contract_addr.txt";
 
-    let block_num = read_block_num(block_num_file).unwrap();
-    let contract_addr = read_contract_addr(contract_addr_file).unwrap();
+    let bug_file = env::var("BUG_FILE").map_err(|_| "Environment variable BUG_FILE is not set").unwrap();
+    let block_num_file= env::var("BLOCK_NUM_FILE").map_err(|_| "Environment variable BLOCK_NUM_FILE is not set").unwrap();
+    let test_file = env::var("TEST_FILE").map_err(|_| "Environment variable TEST_FILE is not set").unwrap();
+    let contract_addr_file = env::var("CONTRACT_ADDR_FILE").map_err(|_| "Environment variable CONTRACT_ADDR_FILE is not set").unwrap();
+
+    // Get everthing you need for the bug check
+    //let bug_file = "bug/bug_report.sol";
+    //let block_num_file = "test/block_num.txt";
+    //let test_file = "test/test_example.sol";
+    //let contract_addr_file = "test/contract_addr.txt";
+
+    let block_num = read_block_num(&block_num_file).unwrap();
+    let contract_addr = read_contract_addr(&contract_addr_file).unwrap();
     // // Check the correctness of the bug
     let check = check_bug_impl(&contract_addr, block_num, &bug_file, &test_file);
 
