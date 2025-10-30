@@ -10,6 +10,8 @@ use utils::deserialize_omr_payload;
 
 use log::{debug, error, info, trace, warn};
 
+use colored::*;
+
 pub struct Receiver {
     // Fields for the receiver
     pub public_params: PublicParams,
@@ -27,8 +29,55 @@ impl Receiver {
         let (sk, pk) = keygen(&pp);
 
         let bug_info = BugInfo {
-            addr: "<contract_address>".to_string(),
-            rules: "<invariants of the bug>".to_string(),
+            addr: "0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413".to_string(),
+            rules: r#"// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "forge-std/Test.sol";
+import "../bug_report.sol";
+
+interface DAO {
+    function totalSupply() external view returns (uint256);
+}
+
+contract DAOTest is Test, BugReport {
+    string  rpcUrl;
+    address targetAddr;
+    uint256 forkId;
+    uint256 preDaoBalance;
+
+    function setUp() public {
+        rpcUrl = vm.envString("MAINNET_RPC_URL");
+        targetAddr = vm.envAddress("TARGET");
+        forkId = vm.createFork(rpcUrl, vm.envUint("block_num"));
+    }
+
+    function pre_inv() internal {
+        vm.selectFork(forkId);
+        preDaoBalance = address(targetAddr).balance;
+    }
+
+    function post_inv() internal {
+        uint256 postBalance = address(targetAddr).balance;
+        assertEq(
+            postBalance,
+            preDaoBalance,
+            "DAO balance was drained!"
+        );
+    }
+
+    function testConstraint() public {
+        pre_inv();
+        bug(forkId, targetAddr);
+        post_inv();
+    }
+
+    function testTotalSupplyIsNonzero() public {
+        bug(forkId, targetAddr);
+        uint256 supply = DAO(targetAddr).totalSupply();
+        assertGt(supply, 0);
+    }
+}"#.to_string(),
         };
 
         let enc_keys = EncKeys::key_gen();
@@ -48,14 +97,16 @@ impl Receiver {
     pub fn post_info_for_submitters(&self) {
         // Logic to post the bug information for submitters
 
-        info!("Bug Address: {}", self.bug_info.addr);
-        info!("Bug Rules: {}", self.bug_info.rules);
+        info!("Bug Address: {}", self.bug_info.addr.bold().magenta());
+        info!("Bug Rules: {}", self.bug_info.rules.bold().magenta());
 
         let clue_key = self.public_key.pk_clue.clone();
         let enc_key = self.enc_keys.pk_enc.clone();
 
-        info!("Encryption Key: {:?}", enc_key);
-        info!("Clue Key: {}", encode_pk_clue_to_hex(&clue_key));
+        let enc_pk_str = enc_key.to_string();
+
+        info!("Encryption Key: {}", enc_pk_str.bold().magenta());
+        info!("Clue Key: {}", encode_pk_clue_to_hex(&clue_key).bold().magenta());
     }
 
     pub fn decode_digest(&mut self, digest: &Vec<Payload>) -> Result<(), ReceiverError> {
@@ -68,7 +119,8 @@ impl Receiver {
                     self.decoded_paylods_queue.push_back(payload.to_vec());
                 }
 
-                info!("Decoded Payloads added to the internal queue!");
+    
+                info!("{}", ("Decoded Payloads added to the internal queue!".bold().green()).to_string());
                 Ok(())
             }
             _ => {
@@ -110,7 +162,7 @@ impl Receiver {
                         }
 
                         let identifier = identifier.unwrap();
-                        info!("Extracted ID: {}", identifier);
+                        info!("Extracted ID: {}", identifier.bold().magenta());
 
                         return Ok(Some(BugMetadata {
                             bug_id: identifier,
