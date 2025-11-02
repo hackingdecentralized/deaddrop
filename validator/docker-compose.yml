@@ -1,0 +1,13 @@
+services:
+  deaddrop:
+    build: .
+    image: myorg/deaddrop:latest
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+    environment:
+      TDX_SOCKET: /var/run/tappd.sock  
+      BUG_FILE: bug/bug_report.sol 
+      BLOCK_NUM_FILE: test/block_num.txt 
+      TEST_FILE: test/test_example.sol
+      CONTRACT_ADDR_FILE: test/contract_addr.txt
+    command: bash ./script.sh
